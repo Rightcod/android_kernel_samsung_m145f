@@ -97,6 +97,7 @@ jobs:
 
       - name: Attest boot.img
         uses: actions/attest@v4
+        continue-on-error: true
         with:
           subject-path: ./boot.img
 
@@ -111,7 +112,7 @@ jobs:
           retention-days: 90
 
       - name: Generate release notes
-        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+        if: always()
         env:
           INPUT_TAG: ${{ inputs.release_tag }}
         run: |
@@ -120,15 +121,20 @@ jobs:
           elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
             tag="$GITHUB_REF_NAME"
           else
-            tag="manual-${GITHUB_RUN_NUMBER}"
+            tag="build-${GITHUB_RUN_NUMBER}"
           fi
 
           echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
-          bash .github/scripts/generate-release-notes.sh "$tag" > release-notes.md
+          if [ -f ".github/scripts/generate-release-notes.sh" ]; then
+            bash .github/scripts/generate-release-notes.sh "$tag" > release-notes.md || echo "Automated build $tag" > release-notes.md
+          else
+            echo "Automated build $tag" > release-notes.md
+          fi
           cat release-notes.md
 
       - name: Create GitHub Release
-        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+        if: always()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

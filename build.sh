@@ -50,10 +50,15 @@ fi
 
 echo -e "[+] Toolchain installed...\n"
 
-# Integrate BakaSU (Formerly Resukisu)
+# Integrate KernelSU-Next (with SUSFS support)
 cd kernel_platform/common
 
-curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash
+if [ ! -d "KernelSU-Next" ]; then
+    curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
+fi
+
+# Multi-Manager support: authorize KSUN, BakaSU, official KernelSU, pershoot, debug, KOWX712
+sed -i 's|0x3e6:79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7,0x338:f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f|0x3e6:79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7,0x377:d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64,0x337:7f833777a83dcf2d9c490a0eb4987b22c2a0d78310d7a048db49746b1076b4ef,0x338:f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f,0x33b:c371061b19d8c7d7d6133c6a9bafe198fa944e50c1b31c9d8daa8d7f1fc2d2d6,0x375:484fcba6e6c43b1fb09700633bf2fb4758f13cb0b2f4457b80d075084b26c588|g' KernelSU-Next/kernel/Kbuild
 
 cd ${WDIR}
 
@@ -61,16 +66,19 @@ cd ${WDIR}
 
 cd kernel_platform/common
 
-wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
-
-sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' ${WDIR}/kernel_platform/common/security/Kconfig
+if [ ! -d "Baseband-guard" ]; then
+    wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+    sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' ${WDIR}/kernel_platform/common/security/Kconfig
+fi
 
 cd ${WDIR}
 
 # Integrate Nomount
 cd kernel_platform/common
 
-curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -
+if [ ! -d "NoMount" ]; then
+    curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -
+fi
 
 cd ${WDIR}
 

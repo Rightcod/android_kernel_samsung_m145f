@@ -1,2 +1,9 @@
 # Local ccache storage (also used when ccache is enabled outside CI)
 .ccache/
+
+kernel_platform/common/Baseband-guard/
+kernel_platform/common/KernelSU-Next/
+kernel_platform/common/NoMount/
+kernel_platform/common/drivers/kernelsu
+kernel_platform/common/fs/nomount
+kernel_platform/common/security/baseband-guard
