@@ -138,20 +138,83 @@ export BUILD_OPTIONS=(
 #3. build kernel
 env ${BUILD_OPTIONS[@]} "${GKI_BUILDSCRIPT}" sec ${TARGET_PRODUCT} || exit 1
 
-#4. copy kernel image and boot.img to dist directory
-if [ -f "${OUT_DIR}/dist/boot.img" ]; then
-    cp "${OUT_DIR}/dist/boot.img" "${WDIR}/boot.img"
-else
-    echo -e "[-] Error: boot.img not found\n"
-    exit 1
-fi
-
+#4. Package kernel Image and boot.img with Samsung ramdisk and AVB footer
 if [ -f "${OUT_DIR}/dist/Image" ]; then
+    echo -e "[+] Kernel Image found at ${OUT_DIR}/dist/Image\n"
+    mkdir -p "${WDIR}/dist"
     cp "${OUT_DIR}/dist/Image" "${WDIR}/dist/Image"
+    cp "${OUT_DIR}/dist/Image" "${WDIR}/Image"
+elif [ -f "${WDIR}/dist/Image" ]; then
+    cp "${WDIR}/dist/Image" "${WDIR}/Image"
 else
     echo -e "[-] Error: Image not found\n"
     exit 1
 fi
 
-echo -e "[+] Kernel build completed successfully\n"
+echo -e "[+] Packaging boot.img with Samsung first-stage ramdisk and AVB signing...\n"
+
+RAMDISK_PATH="${WDIR}/ramdisk/ramdisk.lz4"
+MKBOOTIMG="${WDIR}/kernel_platform/tools/mkbootimg/mkbootimg.py"
+AVBTOOL="${WDIR}/tools/avbtool"
+AVBKEY="${WDIR}/tools/testkey_rsa4096.pem"
+
+if [ ! -f "$MKBOOTIMG" ]; then
+    MKBOOTIMG=$(command -v mkbootimg || echo "")
+fi
+
+if [ ! -f "$AVBTOOL" ]; then
+    AVBTOOL=$(command -v avbtool || echo "")
+fi
+
+if [ ! -f "$AVBKEY" ] && [ -f "${WDIR}/kernel_platform/tools/mkbootimg/gki/testdata/testkey_rsa4096.pem" ]; then
+    AVBKEY="${WDIR}/kernel_platform/tools/mkbootimg/gki/testdata/testkey_rsa4096.pem"
+fi
+
+if [ -f "$RAMDISK_PATH" ] && [ -n "$MKBOOTIMG" ]; then
+    python3 "$MKBOOTIMG" \
+        --header_version 4 \
+        --kernel "${WDIR}/Image" \
+        --ramdisk "$RAMDISK_PATH" \
+        --pagesize 4096 \
+        --os_version 13.0.0 \
+        --os_patch_level 2025-08 \
+        --output "${WDIR}/boot.img"
+
+    if [ -n "$AVBTOOL" ] && [ -f "$AVBKEY" ]; then
+        echo -e "[+] Signing boot.img with AVB footer (partition_size: 100663296)...\n"
+        SALT=$(sha256sum "${WDIR}/Image" | cut -d " " -f 1)
+        python3 "$AVBTOOL" add_hash_footer \
+            --image "${WDIR}/boot.img" \
+            --partition_size 100663296 \
+            --partition_name boot \
+            --key "$AVBKEY" \
+            --algorithm SHA256_RSA4096 \
+            --salt "$SALT"
+    else
+        echo -e "[!] Warning: AVB tool or key not found, skipping AVB signing\n"
+    fi
+elif [ -f "${OUT_DIR}/dist/boot.img" ]; then
+    echo -e "[!] Warning: ramdisk or mkbootimg not found, falling back to raw GKI boot.img\n"
+    cp "${OUT_DIR}/dist/boot.img" "${WDIR}/boot.img"
+else
+    echo -e "[-] Error: boot.img could not be built\n"
+    exit 1
+fi
+
+#5. Package AnyKernel3 flashable zip
+if [ -d "${WDIR}/anykernel" ] && command -v zip >/dev/null 2>&1; then
+    echo -e "[+] Building AnyKernel3 flashable zip...\n"
+    AK3_DIR="${WDIR}/out/anykernel_pkg"
+    rm -rf "$AK3_DIR"
+    mkdir -p "$AK3_DIR"
+    cp -r "${WDIR}/anykernel/"* "$AK3_DIR/"
+    cp "${WDIR}/Image" "$AK3_DIR/Image"
+    AK3_ZIP="${WDIR}/AnyKernel3-M145F-A05S-${COMMIT_HASH}.zip"
+    rm -f "$AK3_ZIP"
+    (cd "$AK3_DIR" && zip -r9 "$AK3_ZIP" * -x "*.git*" "README.md" >/dev/null)
+    rm -rf "$AK3_DIR"
+    echo -e "[+] Created: ${AK3_ZIP}\n"
+fi
+
+echo -e "[+] Kernel build and packaging completed successfully\n"
 exit 0

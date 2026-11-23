@@ -7,3 +7,14 @@ kernel_platform/common/NoMount/
 kernel_platform/common/drivers/kernelsu
 kernel_platform/common/fs/nomount
 kernel_platform/common/security/baseband-guard
+
+# Python cache & build outputs
+__pycache__/
+*.pyc
+boot.img
+Image
+dist/
+out/
+AnyKernel3*.zip
+SHA256SUM.txt
+
