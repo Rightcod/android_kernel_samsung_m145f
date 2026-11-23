@@ -62,6 +62,26 @@ sed -i 's|0x3e6:79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7
 
 cd ${WDIR}
 
+# Integrate BBG
+
+cd kernel_platform/common
+
+if [ ! -d "Baseband-guard" ]; then
+    wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+    sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' ${WDIR}/kernel_platform/common/security/Kconfig
+fi
+
+cd ${WDIR}
+
+# Integrate Nomount
+cd kernel_platform/common
+
+if [ ! -d "NoMount" ]; then
+    curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -
+fi
+
+cd ${WDIR}
+
 #1. target config
 export MODEL="a05s"
 export PROJECT_NAME=${MODEL}
