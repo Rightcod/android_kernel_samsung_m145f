@@ -60,6 +60,16 @@ fi
 # Multi-Manager support: authorize KSUN, BakaSU, official KernelSU, pershoot, debug, KOWX712
 sed -i 's|0x3e6:79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7,0x338:f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f|0x3e6:79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7,0x377:d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64,0x337:7f833777a83dcf2d9c490a0eb4987b22c2a0d78310d7a048db49746b1076b4ef,0x338:f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f,0x33b:c371061b19d8c7d7d6133c6a9bafe198fa944e50c1b31c9d8daa8d7f1fc2d2d6,0x375:484fcba6e6c43b1fb09700633bf2fb4758f13cb0b2f4457b80d075084b26c588|g' KernelSU-Next/kernel/Kbuild
 
+# Disable Samsung EL2 hypervisor hooks (RKP, KDP, DEFEX, NO_PATCH_TEXT) which break Qualcomm SM6225
+python3 -c "
+with open('KernelSU-Next/kernel/Kconfig', 'r') as f:
+    c = f.read()
+import re
+c = re.sub(r'(config KSU_SAMSUNG_[A-Z_]+\n\s+bool [^\n]+\n\s+depends on [^\n]+\n\s+default )y', r'\g<1>n', c)
+with open('KernelSU-Next/kernel/Kconfig', 'w') as f:
+    f.write(c)
+"
+
 cd ${WDIR}
 
 # Integrate BBG

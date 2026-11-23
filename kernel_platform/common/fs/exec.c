@@ -1909,6 +1909,9 @@ out_unmark:
 }
 
 #ifdef CONFIG_KSU_SUSFS
+#ifndef KSU_NO_PREINIT
+#define KSU_NO_PREINIT
+#endif
 extern struct static_key_true ksu_su_compat_enabled;
 extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;
 extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
