@@ -27,10 +27,14 @@ set_perm_recursive 0 0 755 644 $RAMDISK/*;
 set_perm_recursive 0 0 750 750 $RAMDISK/init* $RAMDISK/sbin;
 } # end attributes
 
-# boot shell variables
-block=boot;
+# boot shell variables (both upper and lower case for compatibility)
+BLOCK=/dev/block/by-name/boot;
+block=/dev/block/by-name/boot;
+IS_SLOT_DEVICE=0;
 is_slot_device=0;
+RAMDISK_COMPRESSION=auto;
 ramdisk_compression=auto;
+PATCH_VBMETA_FLAG=auto;
 patch_vbmeta_flag=auto;
 
 # import functions/variables and setup patching - see for reference (DO NOT REMOVE)
