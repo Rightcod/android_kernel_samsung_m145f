@@ -53,8 +53,14 @@ alternative_else_nop_endif
  *	- end     - virtual end address of region
  */
 SYM_FUNC_START(caches_clean_inval_pou)
-	caches_clean_inval_pou_macro
+	uaccess_ttbr0_enable x2, x3, x4
+
+	caches_clean_inval_pou_macro 2f
+1:
+	uaccess_ttbr0_disable x1, x2
 	ret
+2:
+	b	1b
 SYM_FUNC_END(caches_clean_inval_pou)
 
 /*
